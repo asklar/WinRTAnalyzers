@@ -10,6 +10,7 @@
 #include <winrt/windows.foundation.h>
 #include <winrt/windows.foundation.collections.h>
 #include <winrt/windows.data.xml.dom.h>
+#include <wil/win32_helpers.h>
 
 struct Options {
     std::wstring sdkVersion;
@@ -212,7 +213,9 @@ std::array<Analyzer, 1> analyzers = {
 int main()
 {
     opts = new Options();
-    opts->winMDPath = R"(E:\source\ConsoleApplication1\ConsoleA.b1bfaa8b\x64\Debug\Merged\ConsoleApplication1.winmd)";
+    auto exePath = wil::GetModuleFileNameW();
+    auto folder = std::filesystem::path(exePath.get()).parent_path();
+    opts->winMDPath = (folder / "ConsoleApplication1.winmd").string();
     std::vector<std::string> files = {
         getWindowsWinMd(),
         opts->winMDPath,
