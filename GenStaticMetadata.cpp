@@ -12,9 +12,48 @@
 #include <winrt/windows.data.xml.dom.h>
 #include <wil/win32_helpers.h>
 
+
+// view over args -- does bounds checking
+struct args_view {
+    args_view(int argc, char** argv) : argc(argc), argv(argv) {}
+
+    int argc;
+    char** argv;
+
+    char* operator[](int index) const {
+        if (index < 0 || index >= argc) {
+            throw std::out_of_range("index out of range");
+        }
+        return argv[index];
+    }
+
+    auto begin() const {
+        return argv;
+    }
+
+    auto end() const {
+        return argv + argc;
+    }
+};
+
 struct Options {
     std::wstring sdkVersion;
     std::string winMDPath;
+    std::vector<std::string> enabled_analyzers;
+
+    Options(const args_view& args) {
+        for (int i = 1; i < args.argc; ++i) {
+            if (args[i] == "-sdk") {
+                sdkVersion = std::wstring(args[++i], args[i] + strlen(args[i]));
+            }
+            else if (args[i] == "-winmd") {
+                winMDPath = args[++i];
+            }
+            else if (args[i] == "-analyzer") {
+                enabled_analyzers.push_back(args[++i]);
+            }
+        }
+    }
 };
 
 Options* opts;
@@ -75,7 +114,11 @@ std::string_view get_attribute_string_value(winmd::reader::CustomAttribute const
     return {};
 }
 
-using Analyzer = void(*)(std::string_view name, winmd::reader::TypeDef const& def);
+struct Analyzer {
+    std::string_view name;
+    void(*invoke)(std::string_view name, winmd::reader::TypeDef const& def);
+};
+
 winrt::Windows::Data::Xml::Dom::XmlDocument xml;
 winrt::Windows::Data::Xml::Dom::XmlElement fragment{ nullptr };
 
@@ -205,14 +248,15 @@ void OOPCOMServerAnalyzer(std::string_view name, winmd::reader::TypeDef const& d
     }
 }
 
+#define ANALYZER(name) Analyzer { #name, name ## Analyzer }
 
-std::array<Analyzer, 1> analyzers = {
-    &OOPCOMServerAnalyzer,
+std::array<Analyzer, 1> all_analyzers = {
+    ANALYZER(OOPCOMServer),
 };
 
-int main()
+int main(int argc, char** argv)
 {
-    opts = new Options();
+    opts = new Options(args_view(argc, argv));
     auto exePath = wil::GetModuleFileNameW();
     auto folder = std::filesystem::path(exePath.get()).parent_path();
     opts->winMDPath = (folder / "ConsoleApplication1.winmd").string();
@@ -220,6 +264,8 @@ int main()
         getWindowsWinMd(),
         opts->winMDPath,
     };
+
+
 
 
     xml = winrt::Windows::Data::Xml::Dom::XmlDocument();
@@ -244,11 +290,22 @@ int main()
     {
         for (const auto& [name, def] : members.types)
         {
-            for (const auto& analyzer : analyzers)
+            for (const auto& analyzerName : opts->enabled_analyzers)
             {
+                const auto& analyzer = std::find_if(all_analyzers.begin(), all_analyzers.end(), [&](const Analyzer& a) { return a.name == analyzerName; });
+                if (analyzer == all_analyzers.end())
+                {
+                    std::cerr << "Unknown analyzer: " << analyzerName << std::endl;
+                    std::cerr << "Available analyzers: ";
+                    for (const auto& a : all_analyzers)
+                    {
+                        std::cerr << a.name << " ";
+                    }
+                    return -1;
+                }
                 try
                 {
-                    analyzer(name, def);
+                    analyzer->invoke(name, def);
                 }
                 catch (const std::exception& e)
                 {
