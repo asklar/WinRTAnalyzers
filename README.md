@@ -9,7 +9,7 @@ This analyzer automatically generates an APPX fragment to expose a WinRT object 
 
 Example usage:
 ```csharp
-namespace ConsoleApplication 1 {
+namespace ConsoleApplication1 {
     [attributeusage(target_runtimeclass)]
     attribute ComServerAttribute
     {
