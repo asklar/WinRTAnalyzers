@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <filesystem>
 #include <winmd_reader.h>
@@ -66,6 +67,11 @@ int Run()
     auto exePath = wil::GetModuleFileNameW();
     auto folder = std::filesystem::path(exePath.get()).parent_path();
     opts->winMDPath = (folder / "ConsoleApplication1.winmd").string();
+
+    if (opts->enabled_analyzers.empty()) {
+        throw std::runtime_error("No analyzers selected");
+    }
+
     std::vector<std::string> files = {
         getWindowsWinMd(),
         opts->winMDPath,

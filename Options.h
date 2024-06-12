@@ -53,13 +53,13 @@ public:
                 exit(1);
             }
         }
-#ifndef _DEBUG
-        if (winMDPath.empty()) {
-            printf("Missing -winmd option\n");
-            help();
-            exit(1);
-        }
-#endif
+//#ifndef _DEBUG
+//        if (winMDPath.empty()) {
+//            printf("Missing -winmd option\n");
+//            help();
+//            exit(1);
+//        }
+//#endif
     }
 };
 

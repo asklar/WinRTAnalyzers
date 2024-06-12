@@ -29,7 +29,7 @@ void OOPCOMServerAnalyzer(std::string_view name, winmd::reader::TypeDef const& d
         }
 
         // print back the CLSID without the braces to wClsid. Note StringFromGUID2 adds the braces so we do this by hand
-        winrt::hstring wClsidNoBraces(std::wstring_view(wClsid + 1, wClsid + 37));
+        winrt::hstring wClsidNoBraces(std::wstring_view(wClsid + 1, 36));
 
 
         auto executable = get_attribute_string_value(ComServerAttribute, "Executable");

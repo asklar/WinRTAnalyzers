@@ -1,4 +1,5 @@
 #include "Utility.h"
+#include <sstream>
 #include "Options.h"
 #include <winrt/Windows.Foundation.Collections.h>
 
