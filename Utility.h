@@ -24,3 +24,5 @@ constexpr auto xmlns_wincap = L"http://schemas.microsoft.com/appx/manifest/found
 
 winrt::Windows::Data::Xml::Dom::XmlElement GetFragment();
 extern winrt::Windows::Data::Xml::Dom::XmlDocument xml;
+
+void PrintAvailableAnalyzers(std::ostream& out);

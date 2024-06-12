@@ -89,4 +89,15 @@ void PrettyPrintNode(winrt::Windows::Data::Xml::Dom::IXmlNode const& node, std::
     else if (node.NodeType() == NodeType::TextNode) {
         output << Indent(depth) << node.InnerText().c_str() << std::endl;
     }
+    else if (node.NodeType() == NodeType::DocumentNode) {
+        // preprocessing instruction
+        output << L"<?xml version='1.0' encoding='utf-8'?>" << std::endl;   
+
+        for (auto child : node.ChildNodes()) {
+            PrettyPrintNode(child, output, depth);
+        }
+    }
+    else {
+        throw std::invalid_argument("Unsupported node type");
+    }
 }

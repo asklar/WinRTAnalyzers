@@ -48,13 +48,21 @@ winrt::Windows::Data::Xml::Dom::XmlElement GetFragment()
 
 void OOPCOMServerAnalyzer(std::string_view name, winmd::reader::TypeDef const& def);
 
-std::array<Analyzer, 1> all_analyzers = {
+std::array all_analyzers = {
     ANALYZER(OOPCOMServer),
 };
 
-int main(int argc, char** argv)
+void PrintAvailableAnalyzers(std::ostream& out)
 {
-    opts = new Options(args_view(argc, argv));
+    out << "Available analyzers:\n";
+    for (const auto& analyzer : all_analyzers)
+    {
+        out << "  " << analyzer.name << "\n";
+    }
+}
+
+int Run()
+{
     auto exePath = wil::GetModuleFileNameW();
     auto folder = std::filesystem::path(exePath.get()).parent_path();
     opts->winMDPath = (folder / "ConsoleApplication1.winmd").string();
@@ -78,11 +86,7 @@ int main(int argc, char** argv)
                 if (analyzer == all_analyzers.end())
                 {
                     std::cerr << "Unknown analyzer: " << analyzerName << std::endl;
-                    std::cerr << "Available analyzers: ";
-                    for (const auto& a : all_analyzers)
-                    {
-                        std::cerr << a.name << " ";
-                    }
+                    PrintAvailableAnalyzers(std::cerr);
                     return -1;
                 }
                 try
@@ -101,8 +105,38 @@ int main(int argc, char** argv)
 
     if (fragment)
     {
+        if (opts->outputFolder.empty())
+        {
+            std::cerr << "No output folder specified" << std::endl;
+            return -1;
+        }
         std::wstringstream pretty;
-        PrettyPrintNode(fragment, pretty, 0);
-        std::wcout << pretty.str() << std::endl;
+        PrettyPrintNode(xml, pretty, 0);
+        auto outputFolder = std::filesystem::canonical(opts->outputFolder);
+        auto outputFragmentPath = outputFolder / L"fragment.g.appxfragment";
+        std::wofstream outputFragment(outputFragmentPath, std::ios::out | std::ios::binary);
+        if (!outputFragment.is_open())
+        {
+            std::cerr << "Failed to open output file" << std::endl;
+            return -1;
+        }
+        outputFragment << pretty.str();
+        std::wcout << "Fragment written to " << outputFragmentPath.wstring() << std::endl;
+    }
+
+    return 0;
+}
+
+int main(int argc, char** argv)
+{
+    opts = new Options(args_view(argc, argv));
+    try
+    {
+        return Run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return -1;
     }
 }

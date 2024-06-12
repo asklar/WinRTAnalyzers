@@ -7,7 +7,7 @@ struct args_view {
     int argc;
     argT** argv;
 
-    argT* operator[](int index) const {
+    std::basic_string_view<argT> operator[](int index) const {
         if (index < 0 || index >= argc) {
             throw std::out_of_range("index out of range");
         }
